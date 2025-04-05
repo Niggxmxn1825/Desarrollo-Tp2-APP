@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mini App de Tareas</title>
+  <style>
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mini App de Tareas</h1>
+  
+  <!-- Input y botón principal -->
+  <input type="text" id="taskInput" placeholder="Escribe una tarea..." />
+  <button id="taskButton" onclick="submitTask()">Agregar</button>
+  <p id="response"></p>
+
+  <!-- Tabla de tareas -->
+  <h2>Lista de Tareas</h2>
+  <table id="taskTable">
+    <thead>
+      <tr>
+        <th>Tarea</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // === Base de Datos Simulada ===
+    const fakeDatabase = {
+      tasks: [],
+
+      addTask(task) {
+        this.tasks.push({ id: Date.now(), name: task });
+      },
+
+      deleteTask(id) {
+        this.tasks = this.tasks.filter(task => task.id !== id);
+      },
+
+      updateTask(id, newName) {
+        const task = this.tasks.find(task => task.id === id);
+        if (task) task.name = newName;
+      },
+
+      getAllTasks() {
+        return this.tasks;
+      },
+
+      getTaskById(id) {
+        return this.tasks.find(task => task.id === id);
+      }
+    };
+
+    // Variables de estado
+    let editingTaskId = null;
+
+    // === Backend Simulado ===
+    function handleAddTaskRequest(taskName) {
+      if (!taskName || taskName.trim() === "") {
+        return "Error: El nombre de la tarea no puede estar vacío.";
+      }
+
+      fakeDatabase.addTask(taskName.trim());
+      return `Tarea guardada: ${taskName.trim()}`;
+    }
+
+    function handleDeleteTaskRequest(id) {
+      fakeDatabase.deleteTask(id);
+    }
+
+    function handleUpdateTaskRequest(id, newName) {
+      if (!newName || newName.trim() === "") {
+        alert("El nombre de la tarea no puede estar vacío.");
+        return;
+      }
+      fakeDatabase.updateTask(id, newName.trim());
+    }
+
+    // === Frontend ===
+    function submitTask() {
+      const input = document.getElementById("taskInput");
+      const taskName = input.value.trim();
+
+      if (editingTaskId) {
+        handleUpdateTaskRequest(editingTaskId, taskName);
+        editingTaskId = null;
+        document.getElementById("taskButton").innerText = "Agregar";
+        document.getElementById("response").innerText = "Tarea actualizada.";
+      } else {
+        const response = handleAddTaskRequest(taskName);
+        document.getElementById("response").innerText = response;
+      }
+
+      input.value = "";
+      renderTasks();
+    }
+
+    function startEditingTask(id) {
+      const task = fakeDatabase.getTaskById(id);
+      if (task) {
+        document.getElementById("taskInput").value = task.name;
+        document.getElementById("taskButton").innerText = "Guardar cambios";
+        editingTaskId = id;
+      }
+    }
+
+    function renderTasks() {
+      const tasks = fakeDatabase.getAllTasks();
+      const tbody = document.querySelector("#taskTable tbody");
+      tbody.innerHTML = "";
+
+      tasks.forEach(task => {
+        const row = document.createElement("tr");
+
+        const nameCell = document.createElement("td");
+        nameCell.innerText = task.name;
+
+        const actionsCell = document.createElement("td");
+
+        const editBtn = document.createElement("button");
+        editBtn.innerText = "Editar";
+        editBtn.onclick = () => startEditingTask(task.id);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.innerText = "Eliminar";
+        deleteBtn.onclick = () => {
+          handleDeleteTaskRequest(task.id);
+          renderTasks();
+        };
+
+        actionsCell.appendChild(editBtn);
+        actionsCell.appendChild(deleteBtn);
+
+        row.appendChild(nameCell);
+        row.appendChild(actionsCell);
+        tbody.appendChild(row);
+      });
+    }
+
+    renderTasks();
+  </script>
+</body>
+</html>
